@@ -36,11 +36,25 @@ func main() {
         length = get_content_length(conn, u.String())
     }
 
-    result := get_and_write(conn, *u, length)
-    if !result {
+    result := get_data(conn, *u, length)
+    if result == nil {
         fmt.Fprint(os.Stderr, "get and write failed")
     }
     //fmt.Println(string(all))
+    filename := "."+u.Path
+    fp, err := os.Create(filename)
+    if !check_error(err, "file open") {
+        os.Exit(1)
+    }
+    fp.Close()
+    fp, err = os.OpenFile(filename, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0666)
+    if !check_error(err, "file open") {
+        os.Exit(1)
+    } else {
+        defer fp.Close()
+
+    }
+    fp.Write(result)
 }
 
 func check_error(err error, memo string, n ...int) bool {
@@ -64,23 +78,23 @@ func check_error(err error, memo string, n ...int) bool {
 }
 
 
-func get_and_write(conn net.Conn, u url.URL, length int) bool {
+func get_data(conn net.Conn, u url.URL, length int) []byte {
     var err error
     var method string = "GET"
 
     request, err := http.NewRequest(method, u.String(), nil)
     if !check_error(err, "set "+method+" request") {
-        return false
+        return nil
     }
 
     err = request.Write(conn)
     if !check_error(err, "write request to socket") {
-        return false
+        return nil
     }
 
     response, _ := http.ReadResponse(bufio.NewReader(conn), request)
     if !check_error(err, "read response from socket") {
-        return false
+        return nil
     }
 
     total := 0
@@ -96,15 +110,8 @@ func get_and_write(conn net.Conn, u url.URL, length int) bool {
             break
         }
     }
-    filename := "."+u.Path
-    fp, err := os.OpenFile(filename, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0666)
-    if !check_error(err, "file open") {
-        return false
-    } else {
-        defer fp.Close()
-    }
-    fp.Write(data)
-    return true
+
+    return data
 }
 
 func get_content_length(conn net.Conn, u string) int {
