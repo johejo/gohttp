@@ -7,7 +7,6 @@ import (
     "net"
     "net/http"
     "bufio"
-    "strings"
     "strconv"
 )
 
@@ -66,10 +65,9 @@ func check_error(err error, memo string, n ...int) bool {
 
 func get(conn net.Conn, u string, length int) []byte {
     var err error
-    var bodies string = ""
     var method string = "GET"
 
-    request, err := http.NewRequest(method, u, strings.NewReader(bodies))
+    request, err := http.NewRequest(method, u, nil)
     if !check_error(err, "set "+method+" request") {
         return nil
     }
@@ -120,7 +118,10 @@ func get_content_length(conn net.Conn, u string) int {
         return -1
     }
 
-    length, _ = strconv.Atoi(response.Header.Get("Content-Length"))
+    length, err = strconv.Atoi(response.Header.Get("Content-Length"))
+    if !check_error(err, "convert 'content-length' to integer") {
+        return -1
+    }
 
     return length
 }
