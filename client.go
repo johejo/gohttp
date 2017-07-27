@@ -36,7 +36,10 @@ func main() {
         length = get_content_length(conn, u.String())
     }
 
-    _ = get(conn, u.String(), length)
+    data := get(conn, u.String(), length)
+    if data == nil {
+        fmt.Fprint(os.Stderr, "get data failed")
+    }
     //fmt.Println(string(all))
 }
 
